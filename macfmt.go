@@ -12,7 +12,7 @@ func readInputMAC() string {
 	return userInput
 }
 
-// isAllowedCharacter checks if a rune is one of the allowed characters 
+// isAllowedCharacter checks if a rune is one of the allowed characters
 // in a MAC address.
 func isAllowedCharacter(r *rune) bool {
 	allowedCharacters := "abcdefABCDEF0123456789:.-"
@@ -44,14 +44,12 @@ func isValidMAC(userInput *string) bool {
 	return true
 }
 
-
-// sanitizeInputMAC removes all separators from an input MAC address 
+// sanitizeInputMAC removes all separators from an input MAC address
 // and converts all letters to lowercase.
 func sanitizeInputMAC(userInput *string) string {
 	separators := ":.-"
-	//sanitizedMAC := *userInput
 
-	if strings.ContainsAny(*userInput,separators) {
+	if strings.ContainsAny(*userInput, separators) {
 
 		for _, r := range separators {
 			*userInput = strings.ReplaceAll(*userInput, string(r), "")
@@ -60,13 +58,28 @@ func sanitizeInputMAC(userInput *string) string {
 	return strings.ToLower(*userInput)
 }
 
+// formatMAC takes a sanitized MAC as input and returns (prints) a MAC address in the specified format.
+func formatMAC(sanitizedInput string, format string) {
+
+	switch format {
+
+	// Cisco format: abcd.ef01.2345
+	case "cisco":
+		var substrings []string
+		s1 := sanitizedInput[0:4]
+		s2 := sanitizedInput[4:8]
+		s3 := sanitizedInput[8:12]
+		substrings = append(substrings, s1,s2,s3) 
+
+		fmt.Println(strings.Join(substrings, "."))
+	}
+}
 
 func main() {
 	mac := readInputMAC()
-	
+
 	if isValidMAC(&mac) {
-		fmt.Printf("Great MAC address dude!\n")
 		sanitizedmac := sanitizeInputMAC(&mac)
-		fmt.Printf(sanitizedmac)
+		formatMAC(sanitizedmac, os.Args[2])
 	}
 }
