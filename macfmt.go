@@ -81,12 +81,13 @@ func formatMAC(sanitizedInput string, format string) {
 }
 
 func main() {
-	mac := readInputMAC()
 
 	if len(os.Args) < 3{
 		usage()
 		os.Exit(1)
 	}
+
+	mac := readInputMAC()
 
 	if isValidMAC(&mac) {
 		sanitizedmac := sanitizeInputMAC(&mac)
