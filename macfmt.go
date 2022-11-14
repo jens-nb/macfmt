@@ -12,6 +12,11 @@ func readInputMAC() string {
 	return userInput
 }
 
+func usage() {
+
+	fmt.Println("Usage: macfmt <mac-address> <format>")
+}
+
 // isAllowedCharacter checks if a rune is one of the allowed characters
 // in a MAC address.
 func isAllowedCharacter(r *rune) bool {
@@ -77,6 +82,11 @@ func formatMAC(sanitizedInput string, format string) {
 
 func main() {
 	mac := readInputMAC()
+
+	if len(os.Args) < 3{
+		usage()
+		os.Exit(1)
+	}
 
 	if isValidMAC(&mac) {
 		sanitizedmac := sanitizeInputMAC(&mac)
