@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/jens-nb/macfmt/util"
 )
 
 // readInputMAC reads the input MAC address as command line argument.
@@ -12,6 +14,7 @@ func readInputMAC() string {
 	return userInput
 }
 
+// usage prints a help message in case of input error.
 func usage() {
 
 	fmt.Println("Usage: macfmt <mac-address> <format>")
@@ -31,19 +34,20 @@ func isAllowedCharacter(r rune) bool {
 
 // isValidMAC checks if the provides string is a valid MAC address.
 // Allowed Characters are numbers, digits, ".", ":", "-".
-// Allowed positions of separators: 2,4,6,8,10, also
+// Allowed positions of separators: 2,4,6,8,10
 // Longest possible MAC has 17 chars: AB:CD:EF:78:90:12
 // shortest possible MAC has 12 chars: ABCDEF012345
 func isValidMAC(userInput string) bool {
 
 	for _, r := range userInput {
 		if !isAllowedCharacter(r) {
+			fmt.Println("Invalid MAC address: contains invalid character.")
 			return false
 		}
 	}
 
 	if len(userInput) < 12 || len(userInput) > 17 {
-		fmt.Println("Error: MAC address has illegal length.")
+		fmt.Println("Invalid MAC address: has invalid length.")
 		return false
 	}
 	return true
@@ -64,20 +68,32 @@ func sanitizeInputMAC(userInput string) string {
 }
 
 // formatMAC takes a sanitized MAC as input and returns (prints) a MAC address in the specified format.
-func formatMAC(sanitizedInput string, format string) {
+func formatMAC(sanitizedInput string, format string) (string, error) {
+
+	var result string
+
+	substr, err := util.Chunk(sanitizedInput, 2)
+	if err != nil {
+		return "", err
+	}
 
 	switch format {
 
-	// Cisco format: abcd.ef01.2345
-	case "cisco":
-		var substrings []string
-		s1 := sanitizedInput[0:4]
-		s2 := sanitizedInput[4:8]
-		s3 := sanitizedInput[8:12]
-		substrings = append(substrings, s1, s2, s3)
+	case ":":
+		result = strings.Join(substr, ":")
 
-		fmt.Println(strings.Join(substrings, "."))
+	case "-":
+		result = strings.Join(substr, "-")
+
+	case "cisco":
+		substr, err := util.Chunk(sanitizedInput, 4)
+		if err != nil {
+			return "", err
+		}
+		result = strings.Join(substr, ".")
 	}
+	return result, nil
+
 }
 
 func main() {
@@ -90,7 +106,11 @@ func main() {
 	mac := readInputMAC()
 
 	if isValidMAC(mac) {
-		sanitizedmac := sanitizeInputMAC(mac)
-		formatMAC(sanitizedmac, os.Args[2])
+		sanitizedMac := sanitizeInputMAC(mac)
+		result, err := formatMAC(sanitizedMac, os.Args[2])
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(result)
 	}
 }
