@@ -8,92 +8,68 @@ import (
 	"github.com/jens-nb/macfmt/util"
 )
 
-// readInputMAC reads the input MAC address as command line argument.
-func readInputMAC() string {
-	userInput := os.Args[1]
-	return userInput
-}
-
 // usage prints a help message in case of input error.
 func usage() {
-
-	fmt.Println("Usage: macfmt <mac-address> <format>")
+	fmt.Println("Usage: macfmt <MAC-address> <format>")
 }
 
-// isAllowedCharacter checks if a rune is one of the allowed characters
-// in a MAC address.
-func isAllowedCharacter(r rune) bool {
-	allowedCharacters := "abcdefABCDEF0123456789:.-"
-
-	if !strings.ContainsRune(allowedCharacters, r) {
-		fmt.Println("Error: MAC address contains illegal character.")
-		return false
-	}
-	return true
-}
-
-// isValidMAC checks if the provides string is a valid MAC address.
+// isValid checks if the provides string is a valid MAC address.
 // Allowed Characters are numbers, digits, ".", ":", "-".
-// Allowed positions of separators: 2,4,6,8,10
 // Longest possible MAC has 17 chars: AB:CD:EF:78:90:12
 // shortest possible MAC has 12 chars: ABCDEF012345
-func isValidMAC(userInput string) bool {
+func isValid(userInput string) bool {
+	allowedCharacters := "abcdefABCDEF0123456789:.-"
+
+	if len(userInput) < 12 || len(userInput) > 17 {
+		fmt.Println("isValid: Invalid MAC address: has invalid length.")
+		return false
+	}
 
 	for _, r := range userInput {
-		if !isAllowedCharacter(r) {
-			fmt.Println("Invalid MAC address: contains invalid character.")
+		if !strings.ContainsRune(allowedCharacters, r) {
+			fmt.Println("isValid: Invalid MAC address: contains invalid character.")
 			return false
 		}
 	}
 
-	if len(userInput) < 12 || len(userInput) > 17 {
-		fmt.Println("Invalid MAC address: has invalid length.")
-		return false
-	}
 	return true
 }
 
-// sanitizeInputMAC removes all separators from an input MAC address
+// sanitize removes all separators from an input MAC address
 // and converts all letters to lowercase.
-func sanitizeInputMAC(userInput string) string {
+func sanitize(macAddr string) string {
 	separators := ":.-"
 
-	if strings.ContainsAny(userInput, separators) {
-
+	if strings.ContainsAny(macAddr, separators) {
 		for _, r := range separators {
-			userInput = strings.ReplaceAll(userInput, string(r), "")
+			macAddr = strings.ReplaceAll(macAddr, string(r), "")
 		}
 	}
-	return strings.ToLower(userInput)
+	return strings.ToLower(macAddr)
 }
 
-// formatMAC takes a sanitized MAC as input and returns (prints) a MAC address in the specified format.
-func formatMAC(sanitizedInput string, format string) (string, error) {
-
+// format takes a sanitized MAC as input and returns (prints) a MAC address in the specified format.
+func format(macAddr string, format string) (string, error) {
 	var result string
 
-	substr, err := util.Chunk(sanitizedInput, 2)
+	chunks, err := util.Chunk(macAddr, 2)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("format: failed to format MAC address: %w", err)
 	}
 
 	switch format {
-
 	case ":":
-		result = strings.Join(substr, ":")
-
+		result = strings.Join(chunks, ":")
 	case "-":
-		result = strings.Join(substr, "-")
-
+		result = strings.Join(chunks, "-")
 	case "cisco":
-		substr, err := util.Chunk(sanitizedInput, 4)
+		chunks, err := util.Chunk(macAddr, 4)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("format: failed to format MAC address: %w", err)
 		}
-		result = strings.Join(substr, ".")
+		result = strings.Join(chunks, ".")
 	}
 	return result, nil
-
 }
 
 func main() {
@@ -103,13 +79,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	mac := readInputMAC()
+	mac := os.Args[1]
 
-	if isValidMAC(mac) {
-		sanitizedMac := sanitizeInputMAC(mac)
-		result, err := formatMAC(sanitizedMac, os.Args[2])
+	if isValid(mac) {
+		sanitizedMac := sanitize(mac)
+		result, err := format(sanitizedMac, os.Args[2])
+
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("Failed to format MAC: %s", err)
 		}
 		fmt.Println(result)
 	}
