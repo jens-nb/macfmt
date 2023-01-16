@@ -1,16 +1,34 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/jens-nb/macfmt/util"
 )
 
 // usage prints a help message in case of input error.
 func usage() {
 	fmt.Println("Usage: macfmt <MAC-address> <format>")
+}
+
+// Split a string into equal sized chunks specified by size.
+// Cisco format MAC addresses need 3x4 chunks, others 6x2.
+func chunk(s string, size int) ([]string, error) {
+
+	if len(s)%size != 0 {
+		return nil, errors.New("Chunk error: s not divisible by chunk size.")
+	}
+
+	var result []string
+	for i := 0; i < len(s); i += size {
+		chunk := s[i : i+size]
+		result = append(result, chunk)
+
+	}
+
+	return result, nil
+
 }
 
 // isValid checks if the provides string is a valid MAC address.
@@ -52,7 +70,7 @@ func sanitize(macAddr string) string {
 func format(macAddr string, format string) (string, error) {
 	var result string
 
-	chunks, err := util.Chunk(macAddr, 2)
+	chunks, err := chunk(macAddr, 2)
 	if err != nil {
 		return "", fmt.Errorf("format: failed to format MAC address: %w", err)
 	}
@@ -63,7 +81,7 @@ func format(macAddr string, format string) (string, error) {
 	case "-":
 		result = strings.Join(chunks, "-")
 	case "cisco":
-		chunks, err := util.Chunk(macAddr, 4)
+		chunks, err := chunk(macAddr, 4)
 		if err != nil {
 			return "", fmt.Errorf("format: failed to format MAC address: %w", err)
 		}
